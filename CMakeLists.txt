@@ -12,7 +12,7 @@ endif()
 project ("AoC_2023_Day-3")
 
 # Add source to this project's executable.
-add_executable (AoC_2023_Day-3 "AoC_2023_Day-3.cpp" "AoC_2023_Day-3.h")
+add_executable (AoC_2023_Day-3 "AoC_2023_Day-3.cpp" )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET AoC_2023_Day-3 PROPERTY CXX_STANDARD 20)

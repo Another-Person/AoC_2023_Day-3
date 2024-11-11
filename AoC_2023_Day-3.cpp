@@ -1,5 +1,8 @@
-﻿// AoC_2023_Day-3.cpp : Defines the entry point for the application.
-//
+﻿/* AoC 2023 Day 3
+ * Joey Sachtleben
+ *
+ * An attempted solution
+ */
 
 #include <filesystem>
 #include <string>
@@ -8,17 +11,39 @@
 #include <exception>
 #include <stdexcept>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 
-#include "AoC_2023_Day-3.h"
+#include "Node.h"
+
+namespace fs = std::filesystem;
 
 using std::string;
 using std::cout;
 using std::cerr;
 using std::ifstream;
 using std::exception;
-using ss = std::stringstream;
+using std::ranges::for_each;
 
-namespace fs = std::filesystem;
+using ss = std::stringstream;
+using NodeRow = std::vector<Node>;
+using NodeGrid = std::vector<NodeRow>;
+
+
+// Helper structs for counting Nodes
+struct Count
+{
+	int sum {0};
+	void operator()(const Node& n) { sum++; }
+};
+struct RowCount
+{
+	int sum {0};
+	void operator()(const NodeRow& row)
+	{
+		sum += for_each(row, Count()).fun.sum;
+	}
+};
 
 int main(int argc, char* argv[])
 {
@@ -64,13 +89,28 @@ int main(int argc, char* argv[])
 			throw std::runtime_error(msg.str());
 		}
 
-		cout << "Displaying read data: \n";
-
-		string line;
-		while (std::getline(inputFile, line))
+		NodeGrid nodes;
+		nodes.emplace_back();
+		while (!inputFile.eof())
 		{
-			cout << line << "\n";
+			const char c = static_cast<char>(inputFile.get());
+
+			if (c == -1)
+			{
+				break;
+			}
+
+			if (c == '\n')
+			{
+				nodes.emplace_back();
+				continue;
+			}
+			nodes.at(nodes.size()-1).emplace_back(c);
 		}
+
+		const auto total = std::ranges::for_each(nodes, RowCount()).fun;
+
+		cout << "Created " << total.sum << " nodes in " << nodes.size() << " rows!\n";
 		
 	}
 	catch (exception &e)
