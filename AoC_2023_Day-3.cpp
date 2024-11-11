@@ -113,6 +113,9 @@ fs::path ValidatePath(const string_view pathName)
  */
 void FindValidDigits(NodeGrid& grid)
 {
+	cout << "Finding valid digits... ";
+	cout.flush();
+
 	for (size_t x = 0; x < grid.size(); ++x)
 	{
 		for (size_t y = 0; y < grid.at(x).size(); ++y)
@@ -208,6 +211,8 @@ void FindValidDigits(NodeGrid& grid)
 			}
 		}
 	}
+
+	cout << "done.\n";
 }
 
 /* FindValidNumbers
@@ -221,6 +226,9 @@ void FindValidDigits(NodeGrid& grid)
  */
 void FindValidNumbers(NodeGrid& grid)
 {
+	cout << "Finding valid numbers... ";
+	cout.flush();
+
 	for (size_t x = 0; x < grid.size(); ++x)
 	{
 		for (size_t y = 0; y < grid.at(x).size(); ++y)
@@ -260,6 +268,8 @@ void FindValidNumbers(NodeGrid& grid)
 
 		}
 	}
+
+	cout << "done.\n";
 }
 
 /* CreateValidNumbers
@@ -270,10 +280,13 @@ void FindValidNumbers(NodeGrid& grid)
  * Returns:
  *	Nothing. numbers will be filled in place.
  * Throws:
- *
+ * May throw out_of_range or invalid_argument
  */
 void CreateValidNumbers(const NodeGrid& grid, vector<int>& numbers)
 {
+	cout << "Creating valid numbers...";
+	cout.flush();
+
 	for (size_t x = 0; x < grid.size(); ++x)
 	{
 		for (size_t y = 0; y < grid.at(x).size(); ++y)
@@ -301,6 +314,8 @@ void CreateValidNumbers(const NodeGrid& grid, vector<int>& numbers)
 			numbers.emplace_back(std::stoi(rawNum));
 		}
 	}
+
+	cout << "done.\n";
 }
 
 int main(int argc, char* argv[])
@@ -319,8 +334,8 @@ int main(int argc, char* argv[])
 		cout << "Using default file path " << pathName << "\n";
 	}
 
-	try
-	{
+	//try
+	//{
 		fs::path path = ValidatePath(pathName);
 
 		ifstream inputFile(path);
@@ -364,7 +379,7 @@ int main(int argc, char* argv[])
 		int sum = std::accumulate(numbers.begin(), numbers.end(), 0);
 		cout << "Found " << numbers.size() << " valid numbers totalling to " << sum << "!\n";
 		
-	}
+	/*}
 	catch (exception &e)
 	{
 		cerr << "Caught exception: " << e.what() << "\n";
@@ -374,7 +389,7 @@ int main(int argc, char* argv[])
 	{
 		cerr << "Unknown exception encountered.\n";
 		retval = 1;
-	}
+	}*/
 
 	return retval;
 }
