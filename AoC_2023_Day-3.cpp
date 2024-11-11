@@ -5,6 +5,7 @@
  */
 
 #include <algorithm>
+#include <cctype>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -24,6 +25,8 @@ using std::cerr;
 using std::exception;
 using std::ranges::for_each;
 using std::ifstream;
+using std::isdigit;
+using std::ispunct;
 using std::invalid_argument;
 using std::string;
 using std::string_view;
@@ -38,14 +41,25 @@ using ss = std::stringstream;
 struct Count
 {
 	int sum {0};
-	void operator()(const Node& n) { sum++; }
+	int validSum {0};
+	void operator()(const Node& n)
+	{
+		sum++;
+		if (n.isNearSpecial())
+		{
+			validSum++;
+		}
+	}
 };
 struct RowCount
 {
 	int sum {0};
+	int validSum {0};
 	void operator()(const NodeRow& row)
 	{
-		sum += for_each(row, Count()).fun.sum;
+		auto r = for_each(row, Count()).fun;
+		sum += r.sum;
+		validSum += r.validSum;
 	}
 };
 
@@ -82,6 +96,117 @@ fs::path ValidatePath(const string_view pathName)
 	}
 
 	return path;
+}
+
+/* FindValidNumbers
+ *  Takes a NodeGrid and marks all Nodes which are near a symbol.
+ *
+ * Parameters:
+ *	A populated NodeGrid.
+ *
+ * Returns:
+ *  Nothing. The NodeGrid is modified in place.
+ *
+ * Throws:
+ *
+ */
+void FindValidNumbers(NodeGrid& grid)
+{
+	for (size_t x = 0; x < grid.size(); ++x)
+	{
+		for (size_t y = 0; y < grid.at(x).size(); ++y)
+		{
+			Node& node = grid.at(x).at(y);
+			if (!isdigit(node.getCharacter()))
+			{
+				continue;
+			}
+
+			if (x != 0)
+			{
+				if (y != 0)
+				{
+					const char c = grid.at(x-1).at(y-1).getCharacter();
+					if (ispunct(c) && c != '.')
+					{
+						node.setNearSpecial();
+						continue;
+					}
+				}
+
+				const char c = grid.at(x-1).at(y).getCharacter();
+				if (ispunct(c) && c != '.')
+				{
+					node.setNearSpecial();
+					continue;
+				}
+
+				if (y != grid.at(x).size() -1)
+				{
+					const char c = grid.at(x-1).at(y+1).getCharacter();
+					if (ispunct(c) && c != '.')
+					{
+						node.setNearSpecial();
+						continue;
+					}
+				}
+			}
+
+			// braces here PURELY for the ability to collapse them in VS
+			// and to make this block line up with the others better I guess
+			{
+				if (y != 0)
+				{
+					const char c = grid.at(x).at(y-1).getCharacter();
+					if (ispunct(c) && c != '.')
+					{
+						node.setNearSpecial();
+						continue;
+					}
+				}
+
+				if (y != grid.at(x).size() - 1)
+				{
+					const char c = grid.at(x).at(y+1).getCharacter();
+					if (ispunct(c) && c != '.')
+					{
+						node.setNearSpecial();
+						continue;
+					}
+				}
+			}
+
+			if (x != grid.size() -1)
+			{
+				if (y != 0)
+				{
+					const char c = grid.at(x+1).at(y-1).getCharacter();
+					if (ispunct(c) && c != '.')
+					{
+						node.setNearSpecial();
+						continue;
+					}
+				}
+
+				const char c = grid.at(x+1).at(y).getCharacter();
+				if (ispunct(c) && c != '.')
+				{
+					node.setNearSpecial();
+					continue;
+				}
+
+				if (y != grid.at(x).size() -1)
+				{
+					const char c = grid.at(x+1).at(y+1).getCharacter();
+					if (ispunct(c) && c != '.')
+					{
+						node.setNearSpecial();
+						continue;
+					}
+				}
+			}
+		}
+	}
 }
 
 int main(int argc, char* argv[])
@@ -132,9 +257,12 @@ int main(int argc, char* argv[])
 			nodes.at(nodes.size()-1).emplace_back(c);
 		}
 
-		const auto total = std::ranges::for_each(nodes, RowCount()).fun;
+		FindValidNumbers(nodes);
+
+		const auto total = for_each(nodes, RowCount()).fun;
 
 		cout << "Created " << total.sum << " nodes in " << nodes.size() << " rows!\n";
+		cout << "Found " << total.validSum << " digits near a special character!\n";
 		
 	}
 	catch (exception &e)
