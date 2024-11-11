@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -30,9 +31,10 @@ using std::ispunct;
 using std::invalid_argument;
 using std::string;
 using std::string_view;
+using std::vector;
 
-using NodeRow = std::vector<Node>;
-using NodeGrid = std::vector<NodeRow>;
+using NodeRow = vector<Node>;
+using NodeGrid = vector<NodeRow>;
 using ss = std::stringstream;
 
 
@@ -74,7 +76,6 @@ struct RowCount
  *
  * Throws:
  *   invalid_argument if the file does not exist or is not a regular file.
- *
  */
 fs::path ValidatePath(const string_view pathName)
 {
@@ -98,19 +99,19 @@ fs::path ValidatePath(const string_view pathName)
 	return path;
 }
 
-/* FindValidNumbers
+/* FindValidDigits
  *  Takes a NodeGrid and marks all Nodes which are near a symbol.
  *
  * Parameters:
- *	A populated NodeGrid.
+ *	grid - A populated NodeGrid.
  *
  * Returns:
  *  Nothing. The NodeGrid is modified in place.
  *
  * Throws:
- *
+ *  May throw out_of_range.
  */
-void FindValidNumbers(NodeGrid& grid)
+void FindValidDigits(NodeGrid& grid)
 {
 	for (size_t x = 0; x < grid.size(); ++x)
 	{
@@ -209,6 +210,99 @@ void FindValidNumbers(NodeGrid& grid)
 	}
 }
 
+/* FindValidNumbers
+ *   Finds all valid numbers within a NodeGrid.
+ * Parameters:
+ *	grid - A populated NodeGrid. Must have been processed by FindValidDigits.
+ * Returns:
+ *	Nothing. The NodeGrid is modified in place.
+ * Throws:
+ *	May throw out_of_range.
+ */
+void FindValidNumbers(NodeGrid& grid)
+{
+	for (size_t x = 0; x < grid.size(); ++x)
+	{
+		for (size_t y = 0; y < grid.at(x).size(); ++y)
+		{
+			Node& node = grid.at(x).at(y);
+			if (!node.isNearSpecial() || node.hasBeenUsed())
+			{
+				continue;
+			}
+
+			node.use();
+
+			for (int r_y = y-1; r_y >= 0; --r_y)
+			{
+				Node& back = grid.at(x).at(r_y);
+				if (isdigit(back.getCharacter()))
+				{
+					back.use();
+				}
+				else
+				{
+					break;
+				}
+			}
+			for (size_t r_y = y+1; r_y < grid.at(x).size(); ++r_y)
+			{
+				Node& front = grid.at(x).at(r_y);
+				if (isdigit(front.getCharacter()))
+				{
+					front.use();
+				}
+				else
+				{
+					break;
+				}
+			}
+
+		}
+	}
+}
+
+/* CreateValidNumbers
+ *	Creates valid numbers from a NodeGrid.
+ * Parameters:
+ *	grid - A populated NodeGrid which has been processed by FindValidNumbers.
+ *	numbers - An empty vector of integers to be filled.
+ * Returns:
+ *	Nothing. numbers will be filled in place.
+ * Throws:
+ *
+ */
+void CreateValidNumbers(const NodeGrid& grid, vector<int>& numbers)
+{
+	for (size_t x = 0; x < grid.size(); ++x)
+	{
+		for (size_t y = 0; y < grid.at(x).size(); ++y)
+		{
+			if (!grid.at(x).at(y).hasBeenUsed())
+			{
+				continue;
+			}
+
+			string rawNum;
+			while (y < grid.at(x).size())
+			{
+				const Node& node = grid.at(x).at(y);
+				if (node.hasBeenUsed())
+				{
+					rawNum += node.getCharacter();
+				}
+				else
+				{
+					break;
+				}
+				y++;
+			}
+
+			numbers.emplace_back(std::stoi(rawNum));
+		}
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	int retval = 0;
@@ -257,12 +351,18 @@ int main(int argc, char* argv[])
 			nodes.at(nodes.size()-1).emplace_back(c);
 		}
 
-		FindValidNumbers(nodes);
+		FindValidDigits(nodes);
 
 		const auto total = for_each(nodes, RowCount()).fun;
 
 		cout << "Created " << total.sum << " nodes in " << nodes.size() << " rows!\n";
 		cout << "Found " << total.validSum << " digits near a special character!\n";
+
+		FindValidNumbers(nodes);
+		vector<int> numbers;
+		CreateValidNumbers(nodes, numbers);
+		int sum = std::accumulate(numbers.begin(), numbers.end(), 0);
+		cout << "Found " << numbers.size() << " valid numbers totalling to " << sum << "!\n";
 		
 	}
 	catch (exception &e)
